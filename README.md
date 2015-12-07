@@ -1,61 +1,50 @@
-# diamond-child-process-spawn
-
-An element providing a starting point for your own reusable Polymer elements.
-
-
-## Dependencies
-
-Element dependencies are managed via [Bower](http://bower.io/). You can
-install that via:
-
-    npm install -g bower
-
-Then, go ahead and download the element's dependencies:
-
-    bower install
-
-
-## Playing With Your Element
-
-If you wish to work on your element in isolation, we recommend that you use
-[Polyserve](https://github.com/PolymerLabs/polyserve) to keep your element's
-bower dependencies in line. You can install it via:
-
-    npm install -g polyserve
-
-And you can run it via:
-
-    polyserve
-
-Once running, you can preview your element at
-`http://localhost:8080/components/diamond-child-process-spawn/`, where `diamond-child-process-spawn` is the name of the directory containing it.
-
-
-## Testing Your Element
-
-Simply navigate to the `/test` directory of your element to run its tests. If
-you are using Polyserve: `http://localhost:8080/components/diamond-child-process-spawn/test/`
-
-### web-component-tester
-
-The tests are compatible with [web-component-tester](https://github.com/Polymer/web-component-tester).
-Install it via:
-
-    npm install -g web-component-tester
-
-Then, you can run your tests on _all_ of your local browsers via:
-
-    wct
-
-#### WCT Tips
-
-`wct -l chrome` will only run tests in chrome.
-
-`wct -p` will keep the browsers alive after test runs (refresh to re-run).
-
-`wct test/some-file.html` will test only the files you specify.
-
-
-## Yeoman support
-
-If you'd like to use Yeoman to scaffold your element that's possible. The official [`generator-polymer`](https://github.com/yeoman/generator-polymer) generator has a [`seed`](https://github.com/yeoman/generator-polymer#seed) subgenerator.
+<diamond-child-process-spawn>` is a 'native'(Runs in Electron) web component.
+    It utilizes node's [childProcess](https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options) to run a childProcess.
+    ### Example:
+    ## Running a jar
+    ```
+    <diamond-child-process-spawn
+                exec="java"
+                args="['-Xmx1024M', '-jar', {{jarPath}}]"
+                on-data-recieved="_onDataRecieved"
+                on-child-connected="_onChildConnected"
+                on-child-process-done="_onChildProcessDone"
+                on-process-invalid="_onFailedToConnect"
+                on-child-error="_onChildError"
+                on-child-disconnected="_onChildDisconnected"
+              ></diamond-child-process-spawn>
+    ```
+    ...
+    ```
+              _onDataRecieved: function () {
+                console.log('[spawn] done!');
+              },
+              _onChildConnected: function (err) {
+                console.error('[spawn] ERROR: ', err);
+              },
+              _onChildProcessDone: function (data) {
+                console.log('_childProcessOnData: ', data.toString());
+              },
+              _onFailedToConnect: function (data) {
+                console.error('_childProcessOnError: ', data.toString());
+              },
+              _onChildError: function () {
+                console.log('detachChildProcess: ');
+              },
+              _onChildDisconnected: function () {
+                console.log('detachChildProcess: ');
+              }
+    ```
+    ## Running a system command
+    ```
+    <diamond-child-process-spawn
+                exec="ls"
+                args="['-lh', '/usr']"
+                on-data-recieved="_onData"
+                on-child-connected="_onConnected"
+                on-child-process-done="_onData"
+                on-process-invalid="_onFailedToConnect"
+                on-child-error="_onError"
+                on-child-disconnected="_onDisconnected"
+              ></diamond-child-process-spawn>
+    ```
