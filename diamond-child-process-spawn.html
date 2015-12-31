@@ -1,188 +1,215 @@
 <link rel="import" href="../polymer/polymer.html">
-<script>
-  (function (Polymer, spawn) {
+<!--
+`<diamond-child-process-spawn>` is a 'native'(Runs in Electron) web component.
+It utilizes node's [childProcess](https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options) to run a childProcess.
 
-    /**
-    `<diamond-child-process-spawn>` is a 'native'(Runs in Electron) web component.
-    It utilizes node's [childProcess](https://nodejs.org/api/child_process.html#child_process_child_process_spawn_command_args_options) to run a childProcess.
+### Example:
+## Running a jar
+```
+<diamond-child-process-spawn
+            exec="java"
+            args="['-Xmx1024M', '-jar', {{jarPath}}]"
+            on-data-recieved="_onDataRecieved"
+            on-child-connected="_onChildConnected"
+            on-child-process-done="_onChildProcessDone"
+            on-process-invalid="_onFailedToConnect"
+            on-child-error="_onChildError"
+            on-child-disconnected="_onChildDisconnected"
+          ></diamond-child-process-spawn>
+```
+...
+```
+          _onDataRecieved: function () {
+            console.log('[spawn] done!');
+          },
 
-    ### Example:
-    ## Running a jar
-    ```
-    <diamond-child-process-spawn
-                exec="java"
-                args="['-Xmx1024M', '-jar', {{jarPath}}]"
-                on-data-recieved="_onDataRecieved"
-                on-child-connected="_onChildConnected"
-                on-child-process-done="_onChildProcessDone"
-                on-process-invalid="_onFailedToConnect"
-                on-child-error="_onChildError"
-                on-child-disconnected="_onChildDisconnected"
-              ></diamond-child-process-spawn>
-    ```
-    ...
-    ```
-              _onDataRecieved: function () {
-                console.log('[spawn] done!');
-              },
+          _onChildConnected: function () {
+            console.log('[spawn] Connected ');
+          },
 
-              _onChildConnected: function (err) {
-                console.error('[spawn] ERROR: ', err);
-              },
+          _onChildProcessDone: function (data) {
+            console.log('_childProcessOnData: ', data.toString());
+          },
 
-              _onChildProcessDone: function (data) {
-                console.log('_childProcessOnData: ', data.toString());
-              },
+          _onFailedToConnect: function (data) {
+            console.error('_childProcessOnError: ', data.toString());
+          },
 
-              _onFailedToConnect: function (data) {
-                console.error('_childProcessOnError: ', data.toString());
-              },
+          _onChildError: function () {
+          console.error('[spawn] ERROR: ', err);
+          },
 
-              _onChildError: function () {
-                console.log('detachChildProcess: ');
-              },
-
-              _onChildDisconnected: function () {
-                console.log('detachChildProcess: ');
-              }
-    ```
-
-    ## Running a system command
-    ```
-    <diamond-child-process-spawn
-                exec="ls"
-                args="['-lh', '/usr']"
-                on-data-recieved="_onData"
-                on-child-connected="_onConnected"
-                on-child-process-done="_onData"
-                on-process-invalid="_onFailedToConnect"
-                on-child-error="_onError"
-                on-child-disconnected="_onDisconnected"
-              ></diamond-child-process-spawn>
-    ```
-     */
-    Polymer({
-      is: 'diamond-child-process-spawn',
-
-      properties: {
-        /**
-         * A valid child process command.
-         */
-        exec: {
-          type: String,
-        },
-
-        /**
-         * An array of arguments to be passed into the child process.
-         */
-        args: {
-          type: Array
-        },
-
-        /**
-         * A dictionary of options to be passed into the child process.
-         */
-        options: {
-          type: Object,
-        },
-
-        /**
-         * The process ID of the child.
-         */
-
-        pid: {
-          type: Number,
-          reflectToAttribute: true,
-          readOnly: true
-        },
-
-        /**
-         * A private reference to the child process.
-         */
-        _childProcess: {
-          type: Object
-        }
-      },
-
-      attached: function () {
-        this.async(function () {
-          if (this.args && this.options) {
-            spawn = spawn.bind(this, this.exec, this.args. this.options);
-          } else if (this.args) {
-            spawn = spawn.bind(this, this.exec, this.args);
-          } else {
-            spawn = spawn.bind(this, this.exec);
+          _onChildDisconnected: function () {
+            console.log('detachChildProcess: ');
           }
+```
 
-          spawn()
-            .progress(this._attachChildProcess.bind(this))
-            .then(this._childProcessDone.bind(this))
-            .fail(this._childProcessFailed.bind(this));
+## Running a system command
+```
+<diamond-child-process-spawn
+            exec="ls"
+            args="['-lh', '/usr']"
+            on-data-recieved="_onData"
+            on-child-connected="_onConnected"
+            on-child-process-done="_onData"
+            on-process-invalid="_onFailedToConnect"
+            on-child-error="_onError"
+            on-child-disconnected="_onDisconnected"
+          ></diamond-child-process-spawn>
+```
+ -->
 
-        }.bind(this));
-      },
+ <dom-module id="diamond-child-process-spawn">
+   <script>
+     (function (Polymer, spawn) {
+       'use strict';
+       class DiamondChildProcessSpawn {
+         beforeRegister() {
+           this.is = 'diamond-child-process-spawn';
 
-      _attachChildProcess: function (childProcess) {
-        if (this._childProcess) {
-          this.detachChildProcess();
-        }
-        this._childProcess = childProcess;
-        this._setPid(childProcess.pid);
-        childProcess.stdout.on('data', this._childProcessOnData.bind(this));
-        childProcess.stderr.on('data', this._childProcessOnError.bind(this));
-        /**
-         * Event is fired when a child process is
-         * @event child-connected
-         * @param  {[Node Child Process]} childProcess      Child process object from node
-         */
-        this.fire('child-connected', childProcess);
-      },
+           this.properties = {
+             /**
+              * A valid child process command.
+              */
+             exec: {
+               type: String,
+             },
 
-      _childProcessDone: function () {
-        /**
-         * Event is fired when a child process finishes execution.
-         * @event child-process-done
-         */
-        this.fire('child-process-done');
-      },
+             /**
+              * An array of arguments to be passed into the child process.
+              */
+             args: {
+               type: Array
+             },
 
-      _childProcessFailed: function (err) {
-        /**
-         * Event is fired when the child process fails to run. Check to make sure your command and arguments are valid.
-         * @event process-invalid
-         */
-        this.fire('process-invalid', err.toString());
-      },
+             /**
+              * A dictionary of options to be passed into the child process.
+              */
+             options: {
+               type: Object,
+             },
+
+             /**
+              * The process ID of the child.
+              */
+
+             pid: {
+               type: Number,
+               reflectToAttribute: true,
+               readOnly: true
+             },
+
+             /**
+              * A private reference to the child process.
+              */
+             _childProcess: {
+               type: Object
+             },
+
+             /**
+             * A buffer for keeping track of writes when the child process is not connected.
+             */
+             __childProcessWriteBuffer: {
+               type: Array,
+               value: () => { return []; }
+             }
+           };
+         }
+
+         attached() {
+           this.async(() => {
+             let runner;
+             if (this.args && this.options) {
+               runner = spawn.bind(this, this.exec, this.args. this.options);
+             } else if (this.args) {
+               runner = spawn.bind(this, this.exec, this.args);
+             } else {
+               runner = spawn.bind(this, this.exec);
+             }
+
+             runner()
+               .progress(this._attachChildProcess.bind(this))
+               .then(this._childProcessDone.bind(this))
+               .fail(this._childProcessFailed.bind(this));
+
+           });
+         }
+
+         write(str) {
+           this.__childProcessWriteBuffer.push(str);
+           if (this._childProcess) {
+             for (let str of this.__childProcessWriteBuffer) {
+               this._childProcess.stdin.write(`${str}\n`);
+             }
+             this.__childProcessWriteBuffer = [];
+           }
+         }
+
+         _attachChildProcess(childProcess) {
+           if (this._childProcess) {
+             this.detachChildProcess();
+           }
+           this._childProcess = childProcess;
+           this._setPid(childProcess.pid);
+           childProcess.stdout.on('data', this._childProcessOnData.bind(this));
+           childProcess.stderr.on('data', this._childProcessOnError.bind(this));
+           this.write('');
+           /**
+            * Event is fired when a child process is
+            * @event child-connected
+            * @param  {[Node Child Process]} childProcess      Child process object from node
+            */
+           this.fire('child-connected', childProcess);
+         }
+
+         _childProcessDone() {
+           /**
+            * Event is fired when a child process finishes execution.
+            * @event child-process-done
+            */
+           this.fire('child-process-done');
+         }
+
+         _childProcessFailed(err) {
+           /**
+            * Event is fired when the child process fails to run. Check to make sure your command and arguments are valid.
+            * @event process-invalid
+            */
+           this.fire('process-invalid', err.toString());
+         }
 
 
-      _childProcessOnData: function (data) {
-        /**
-         * Event is fired whenever someone writes to the stdout of the child applicaiton.
-         * @event data-recieved
-         */
-        this.fire('data-recieved', data.toString());
-      },
+         _childProcessOnData(data) {
+           /**
+            * Event is fired whenever someone writes to the stdout of the child applicaiton.
+            * @event data-recieved
+            */
+           this.fire('data-recieved', data.toString());
+         }
 
-      _childProcessOnError: function (data) {
-        /**
-         * Event is fired whenever someone an error occurs within the child process.
-         * @event child-error
-         */
-        this.fire('child-error', data.toString());
-      },
+         _childProcessOnError(data) {
+           /**
+            * Event is fired whenever someone an error occurs within the child process.
+            * @event child-error
+            */
+           this.fire('child-error', data.toString());
+         }
 
-      /**
-       * A function which can be called to kill the child process.
-       */
-      detachChildProcess: function () {
-        this._childProcess.kill('SIGHUP');
-        /**
-         * Event is fired when a child process is disconnected before it is `done`
-         * @event child-error
-         */
-        this.fire('child-disconnected');
-      }
-    });
+         /**
+          * A function which can be called to kill the child process.
+          */
+         detachChildProcess() {
+           this._childProcess.kill('SIGHUP');
+           /**
+            * Event is fired when a child process is disconnected before it is `done`
+            * @event child-error
+            */
+           this.fire('child-disconnected');
+         }
+       };
 
-  })(Polymer, require('child-process-promise').spawn);
-</script>
+
+       Polymer(DiamondChildProcessSpawn);
+     })(Polymer, require('child-process-promise').spawn);
+   </script>
+ </dom-module>
