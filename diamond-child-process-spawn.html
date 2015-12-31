@@ -134,7 +134,10 @@ It utilizes node's [childProcess](https://nodejs.org/api/child_process.html#chil
 
            });
          }
-
+         
+         /**
+         * Allows you to write a string to the stdin of the child process
+         */
          write(str) {
            this.__childProcessWriteBuffer.push(str);
            if (this._childProcess) {
